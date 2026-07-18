@@ -7,8 +7,7 @@ import {
   DollarSign, 
   Check, 
   AlertTriangle,
-  AlertCircle,
-  ShieldCheck
+  AlertCircle
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -36,7 +35,7 @@ const LANGUAGES = [
 ];
 
 export const Settings: React.FC = () => {
-  const { restaurant, deleteRestaurantAccount, updateRestaurantState, userProfile, updateUserProfileState } = useAuth();
+  const { restaurant, deleteRestaurantAccount, updateRestaurantState } = useAuth();
   const { darkMode, toggleDarkMode } = useTheme();
   const navigate = useNavigate();
 
@@ -114,9 +113,9 @@ export const Settings: React.FC = () => {
             <span>Preferences</span>
           </h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {/* Currency Selector */}
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col justify-end gap-1.5">
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                 <DollarSign className="w-4 h-4 text-slate-400" />
                 <span>Currency Display</span>
@@ -133,7 +132,7 @@ export const Settings: React.FC = () => {
             </div>
 
             {/* Language Selector */}
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col justify-end gap-1.5">
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                 <Globe className="w-4 h-4 text-slate-400" />
                 <span>Default Menu Language</span>
@@ -146,29 +145,6 @@ export const Settings: React.FC = () => {
                 {LANGUAGES.map((lang) => (
                   <option key={lang.code} value={lang.code}>{lang.label}</option>
                 ))}
-              </select>
-            </div>
-
-            {/* Account Role Selector (Developer Quick Test) */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-slate-400" />
-                <span>Account Role</span>
-              </label>
-              <select
-                value={userProfile?.role || "User"}
-                onChange={async (e) => {
-                  const role = e.target.value as "Admin" | "User";
-                  try {
-                    await updateUserProfileState({ role });
-                  } catch (err) {
-                    console.error("Failed to switch role:", err);
-                  }
-                }}
-                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-premium text-sm focus:outline-none text-slate-800 dark:text-slate-200 cursor-pointer"
-              >
-                <option value="User">User (Owner)</option>
-                <option value="Admin">Admin (System)</option>
               </select>
             </div>
           </div>
