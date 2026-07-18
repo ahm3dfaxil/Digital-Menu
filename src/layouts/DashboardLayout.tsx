@@ -14,7 +14,8 @@ import {
   Search, 
   Bell, 
   Sun,
-  Moon
+  Moon,
+  ShieldCheck
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -40,6 +41,7 @@ export const DashboardLayout: React.FC = () => {
     { name: "Categories", path: "/dashboard/categories", icon: FolderHeart },
     { name: "Menu Items", path: "/dashboard/menu", icon: UtensilsCrossed },
     { name: "QR Code", path: "/dashboard/qr-code", icon: QrCode },
+    ...(userProfile?.role === "Admin" ? [{ name: "Admin Panel", path: "/dashboard/admin", icon: ShieldCheck }] : []),
     { name: "Settings", path: "/dashboard/settings", icon: SettingsIcon },
   ];
 

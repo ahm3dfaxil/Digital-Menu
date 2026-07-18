@@ -10,7 +10,7 @@ import {
 } from "firebase/auth";
 import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
 import { auth, db, googleProvider, isConfigValid } from "../firebase/config";
-import type { UserProfile, Restaurant } from "../types";
+import type { UserProfile, Restaurant, Category, MenuItem } from "../types";
 
 interface AuthContextType {
   user: User | null;
@@ -24,6 +24,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updateRestaurantState: (updates: Partial<Restaurant>) => void;
+  updateUserProfileState: (updates: Partial<UserProfile>) => Promise<void>;
   deleteRestaurantAccount: () => Promise<void>;
 }
 
@@ -62,17 +63,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createdAt: new Date().toISOString(),
     };
 
+    const role = email.toLowerCase() === "demo@menuflow.com" || email.toLowerCase().includes("admin") ? "Admin" : "User";
     const mockProfile: UserProfile = {
       uid,
       name,
       email,
       restaurantId: mockRestaurant.id,
+      role,
+      status: "Active",
       createdAt: new Date().toISOString(),
     };
 
     localStorage.setItem(MOCK_USER_KEY, JSON.stringify(mockUser));
     localStorage.setItem(MOCK_PROFILE_KEY, JSON.stringify(mockProfile));
     localStorage.setItem(MOCK_RESTAURANT_KEY, JSON.stringify(mockRestaurant));
+
+    // Seed mock lists
+    try {
+      const usersData = localStorage.getItem("menuflow_mock_users_list");
+      const allUsers = usersData ? JSON.parse(usersData) : [];
+      if (!allUsers.some((u: any) => u.uid === uid)) {
+        allUsers.push(mockProfile);
+        localStorage.setItem("menuflow_mock_users_list", JSON.stringify(allUsers));
+      }
+
+      const restsData = localStorage.getItem("menuflow_mock_restaurants_list");
+      const allRests = restsData ? JSON.parse(restsData) : [];
+      if (!allRests.some((r: any) => r.id === mockRestaurant.id)) {
+        allRests.push(mockRestaurant);
+        localStorage.setItem("menuflow_mock_restaurants_list", JSON.stringify(allRests));
+      }
+    } catch (e) {
+      console.error("Error updating mock lists:", e);
+    }
 
     setUser(mockUser);
     setUserProfile(mockProfile);
@@ -86,6 +109,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (profileSnap.exists()) {
       const profile = profileSnap.data() as UserProfile;
+      
+      // Auto-assign Admin role to afnwafnw91@gmail.com or other admin emails if role is missing
+      if (!profile.role) {
+        const userEmail = profile.email || firebaseUser.email || "";
+        profile.role = userEmail.toLowerCase() === "afnwafnw91@gmail.com" || userEmail.toLowerCase().includes("admin") ? "Admin" : "User";
+        profile.status = profile.status || "Active";
+        await setDoc(profileRef, { role: profile.role, status: profile.status }, { merge: true });
+      }
+
       const restRef = doc(db, "restaurants", profile.restaurantId);
       const restSnap = await getDoc(restRef);
       
@@ -132,11 +164,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         createdAt: new Date().toISOString(),
       };
       
+      const role = (firebaseUser.email || "").toLowerCase() === "admin@menuflow.com" || (firebaseUser.email || "").toLowerCase().includes("admin") ? "Admin" : "User";
       const profile: UserProfile = {
         uid: firebaseUser.uid,
         name: name || firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "Owner",
         email: firebaseUser.email || "",
         restaurantId,
+        role,
+        status: "Active",
         createdAt: new Date().toISOString(),
       };
 
@@ -247,12 +282,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const deleteRestaurantAccount = async () => {
     if (!isConfigValid) {
+      const currentUid = userProfile?.uid;
+      const currentRestId = restaurant?.id;
+
       localStorage.removeItem(MOCK_USER_KEY);
       localStorage.removeItem(MOCK_PROFILE_KEY);
       localStorage.removeItem(MOCK_RESTAURANT_KEY);
-      // clear other collections from localstorage
-      localStorage.removeItem("menuflow_mock_categories");
-      localStorage.removeItem("menuflow_mock_menuitems");
+      
+      if (currentUid) {
+        try {
+          const usersData = localStorage.getItem("menuflow_mock_users_list");
+          if (usersData) {
+            const allUsers = JSON.parse(usersData) as UserProfile[];
+            localStorage.setItem("menuflow_mock_users_list", JSON.stringify(allUsers.filter(u => u.uid !== currentUid)));
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      if (currentRestId) {
+        try {
+          const restsData = localStorage.getItem("menuflow_mock_restaurants_list");
+          if (restsData) {
+            const allRests = JSON.parse(restsData) as Restaurant[];
+            localStorage.setItem("menuflow_mock_restaurants_list", JSON.stringify(allRests.filter(r => r.id !== currentRestId)));
+          }
+          
+          const catsData = localStorage.getItem("menuflow_mock_categories");
+          if (catsData) {
+            const allCats = JSON.parse(catsData) as Category[];
+            localStorage.setItem("menuflow_mock_categories", JSON.stringify(allCats.filter(c => c.restaurantId !== currentRestId)));
+          }
+
+          const itemsData = localStorage.getItem("menuflow_mock_menuitems");
+          if (itemsData) {
+            const allItems = JSON.parse(itemsData) as MenuItem[];
+            localStorage.setItem("menuflow_mock_menuitems", JSON.stringify(allItems.filter(i => i.restaurantId !== currentRestId)));
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
       setUser(null);
       setUserProfile(null);
       setRestaurant(null);
@@ -270,6 +341,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await deleteUser(currentUser);
   };
 
+  const updateUserProfileState = async (updates: Partial<UserProfile>) => {
+    if (!userProfile) return;
+    const updated = { ...userProfile, ...updates };
+    setUserProfile(updated);
+    if (!isConfigValid) {
+      localStorage.setItem(MOCK_PROFILE_KEY, JSON.stringify(updated));
+      try {
+        const usersData = localStorage.getItem("menuflow_mock_users_list");
+        if (usersData) {
+          const allUsers = JSON.parse(usersData) as UserProfile[];
+          const idx = allUsers.findIndex(u => u.uid === userProfile.uid);
+          if (idx !== -1) {
+            allUsers[idx] = { ...allUsers[idx], ...updates };
+            localStorage.setItem("menuflow_mock_users_list", JSON.stringify(allUsers));
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    } else {
+      await setDoc(doc(db, "users", userProfile.uid), updates, { merge: true });
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -284,6 +379,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logout,
         resetPassword,
         updateRestaurantState,
+        updateUserProfileState,
         deleteRestaurantAccount,
       }}
     >

@@ -21,6 +21,7 @@ import CategoryManagement from "./pages/CategoryManagement";
 import MenuManagement from "./pages/MenuManagement";
 import QRCodePage from "./pages/QRCodePage";
 import Settings from "./pages/Settings";
+import AdminDashboard from "./pages/AdminDashboard";
 
 export const App: React.FC = () => {
   return (
@@ -51,6 +52,7 @@ export const App: React.FC = () => {
               <Route path="categories" element={<CategoryManagement />} />
               <Route path="menu" element={<MenuManagement />} />
               <Route path="qr-code" element={<QRCodePage />} />
+              <Route path="admin" element={<AdminDashboard />} />
               <Route path="settings" element={<Settings />} />
               {/* Fallback inside dashboard */}
               <Route path="*" element={<Navigate to="/dashboard" replace />} />

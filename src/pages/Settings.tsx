@@ -7,7 +7,8 @@ import {
   DollarSign, 
   Check, 
   AlertTriangle,
-  AlertCircle
+  AlertCircle,
+  ShieldCheck
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -35,7 +36,7 @@ const LANGUAGES = [
 ];
 
 export const Settings: React.FC = () => {
-  const { restaurant, deleteRestaurantAccount, updateRestaurantState } = useAuth();
+  const { restaurant, deleteRestaurantAccount, updateRestaurantState, userProfile, updateUserProfileState } = useAuth();
   const { darkMode, toggleDarkMode } = useTheme();
   const navigate = useNavigate();
 
@@ -113,17 +114,17 @@ export const Settings: React.FC = () => {
             <span>Preferences</span>
           </h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {/* Currency Selector */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-350 uppercase tracking-wider flex items-center gap-1.5">
-                <DollarSign className="w-4 h-4 text-slate-450" />
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <DollarSign className="w-4 h-4 text-slate-400" />
                 <span>Currency Display</span>
               </label>
               <select
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-slate-850 rounded-premium text-sm focus:outline-none text-slate-800 dark:text-slate-200 cursor-pointer"
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-premium text-sm focus:outline-none text-slate-800 dark:text-slate-200 cursor-pointer"
               >
                 {CURRENCIES.map((cur) => (
                   <option key={cur.code} value={cur.code}>{cur.label}</option>
@@ -133,23 +134,46 @@ export const Settings: React.FC = () => {
 
             {/* Language Selector */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-350 uppercase tracking-wider flex items-center gap-1.5">
-                <Globe className="w-4 h-4 text-slate-450" />
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <Globe className="w-4 h-4 text-slate-400" />
                 <span>Default Menu Language</span>
               </label>
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-slate-850 rounded-premium text-sm focus:outline-none text-slate-800 dark:text-slate-200 cursor-pointer"
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-premium text-sm focus:outline-none text-slate-800 dark:text-slate-200 cursor-pointer"
               >
                 {LANGUAGES.map((lang) => (
                   <option key={lang.code} value={lang.code}>{lang.label}</option>
                 ))}
               </select>
             </div>
+
+            {/* Account Role Selector (Developer Quick Test) */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-slate-400" />
+                <span>Account Role</span>
+              </label>
+              <select
+                value={userProfile?.role || "User"}
+                onChange={async (e) => {
+                  const role = e.target.value as "Admin" | "User";
+                  try {
+                    await updateUserProfileState({ role });
+                  } catch (err) {
+                    console.error("Failed to switch role:", err);
+                  }
+                }}
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-premium text-sm focus:outline-none text-slate-800 dark:text-slate-200 cursor-pointer"
+              >
+                <option value="User">User (Owner)</option>
+                <option value="Admin">Admin (System)</option>
+              </select>
+            </div>
           </div>
 
-          <div className="border-t border-slate-100 dark:border-slate-850 pt-5">
+          <div className="border-t border-slate-100 dark:border-slate-800 pt-5">
             {/* Dark mode Toggle */}
             <Toggle
               checked={darkMode}
@@ -178,7 +202,7 @@ export const Settings: React.FC = () => {
               Danger Zone
             </h3>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-450 max-w-xl">
+          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xl">
             Deleting your account will permanently wipe out your restaurant profile, layout branding, category indices, and all published menu items. This cannot be undone.
           </p>
           <div>
@@ -221,7 +245,7 @@ export const Settings: React.FC = () => {
           </div>
 
           {deleteError && (
-            <div className="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 rounded-premium text-xs text-red-600 dark:text-red-450 flex items-start gap-2">
+            <div className="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 rounded-premium text-xs text-red-600 dark:text-red-400 flex items-start gap-2">
               <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
               <span>{deleteError}</span>
             </div>

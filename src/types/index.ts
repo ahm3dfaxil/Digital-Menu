@@ -4,6 +4,8 @@ export interface UserProfile {
   email: string;
   restaurantId: string;
   createdAt: string;
+  role?: "Admin" | "User";
+  status?: "Active" | "Suspended";
 }
 
 export interface Restaurant {
